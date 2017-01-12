@@ -1,77 +1,64 @@
-import numpy as np
-import pandas as pd
-
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-
 import tensorflow as tf
 
-# settings
-LEARNING_RATE = 1e-4
-# set to 20000 on local environment to get 0.99 accuracy
-TRAINING_ITERATIONS = 2500
+from tensorflow.examples.tutorials.mnist import input_data
 
-DROPOUT = 0.5
-BATCH_SIZE = 50
+mnist = input_data.read_data_sets("/tmp/data/", one_hot=True)
 
-# set to 0 to train on all available data
-VALIDATION_SIZE = 2000
+n_nodes_h1 = 500
+n_nodes_h2 = 500
+n_nodes_h3 = 500
 
-# image number to output
-IMAGE_TO_DISPLAY = 10
+n_classes = 10
+batch_size = 100
 
-
-# read training data from CSV file
-data = pd.read_csv('train.csv')
-
-print('data({0[0]},{0[1]})'.format(data.shape))
-print (data.head())
-
-images = data.iloc[:,1:].values
-images = images.astype(np.float)
-
-# convert from [0:255] => [0.0:1.0]
-images = np.multiply(images, 1.0 / 255.0)
-
-print('images({0[0]},{0[1]})'.format(images.shape))
-
-image_size = images.shape[1]
-print ('image_size => {0}'.format(image_size))
-
-# in this case all images are square
-image_width = image_height = np.ceil(np.sqrt(image_size)).astype(np.uint8)
-labels_flat = data[[0]].values.flatten()
-
-print('labels_flat({0})'.format(len(labels_flat)))
-print ('labels_flat[{0}] => {1}'.format(IMAGE_TO_DISPLAY,labels_flat[IMAGE_TO_DISPLAY]))
-labels_count = np.unique(labels_flat).shape[0]
+x = tf.placeholder('float', [None, 784])
+y = tf.placeholder('float')
 
 
-# convert class labels from scalars to one-hot vectors
-# 0 => [1 0 0 0 0 0 0 0 0 0]
-# 1 => [0 1 0 0 0 0 0 0 0 0]
-# ...
-# 9 => [0 0 0 0 0 0 0 0 0 1]
-def dense_to_one_hot(labels_dense, num_classes):
-    num_labels = labels_dense.shape[0]
-    index_offset = np.arange(num_labels) * num_classes
-    labels_one_hot = np.zeros((num_labels, num_classes))
-    labels_one_hot.flat[index_offset + labels_dense.ravel()] = 1
-    return labels_one_hot
+def neural_network_model(data):
+    hidden_1_layer = {'weights': tf.Variable(tf.random_normal([784, n_nodes_h1])), 'biases': tf.Variable(tf.random_normal([n_nodes_h1]))}
 
-# labels = dense_to_one_hot(labels_flat, labels_count)
-# labels = labels.astype(np.uint8)
+    hidden_2_layer = {'weights': tf.Variable(tf.random_normal([n_nodes_h1, n_nodes_h2])), 'biases': tf.Variable(tf.random_normal([n_nodes_h2]))}
 
-# print('labels({0[0]},{0[1]})'.format(labels.shape))
-# print ('labels[{0}] => {1}'.format(IMAGE_TO_DISPLAY,labels[IMAGE_TO_DISPLAY]))
+    hidden_3_layer = {'weights': tf.Variable(tf.random_normal([n_nodes_h2, n_nodes_h3])), 'biases': tf.Variable(tf.random_normal([n_nodes_h3]))}
 
-import pdb
-pdb.set_trace()
+    output_layer = {'weights': tf.Variable(tf.random_normal([n_nodes_h1, n_classes])), 'biases': tf.Variable(tf.random_normal([n_classes]))}
 
-indices = labels_flat
-depth = labels_count
-on_value = 1
-off_value = 0
-axis = -1
+    l1 = tf.add(tf.matmul(data, hidden_1_layer['weights']), hidden_1_layer['biases'])
+    l1 = tf.nn.relu(l1)
 
-tf.one_hot(indices, depth, on_value, off_value, axis)
+    l2 = tf.add(tf.matmul(l1, hidden_2_layer['weights']), hidden_2_layer['biases'])
+    l2 = tf.nn.relu(l2)
+
+    l3 = tf.add(tf.matmul(l2, hidden_3_layer['weights']),  hidden_3_layer['biases'])
+    l3 = tf.nn.relu(l3)
+
+    output = tf.matmul(l3, output_layer['weights']) + output_layer['biases']
+
+    return output
+
+def train_neural_network(x):
+    prediction = neural_network_model(x)
+    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(prediction, y))
+
+    optimizer = tf.train.AdamOptimizer().minimize(cost)
+    hm_epochs = 10
+
+    with tf.Session() as sess:
+        sess.run(tf.initialize_all_variables())
+
+        for epoch in range(hm_epochs):
+            epoch_loss = 0
+            for _ in range(int(mnist.train.num_examples/batch_size)):
+                epoch_x, epoch_y = mnist.train.next_batch(batch_size)
+                _, c = sess.run([optimizer, cost], feed_dict={x: epoch_x, y: epoch_y})
+                epoch_loss += c
+
+            print('Epoch', epoch, 'completed out of', hm_epochs, 'loss', epoch_loss)
+
+        correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
+        accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
+
+        print('Accuracy', accuracy.eval({x: mnist.test.images, y: mnist.test.labels}))
+
+train_neural_network(x)
