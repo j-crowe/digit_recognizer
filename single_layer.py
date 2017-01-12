@@ -9,3 +9,12 @@ data = input_data.read_data_sets("data/MNIST/", one_hot=True)
 # Get basic information about dataset
 print("Training Size:\t\t{}".format(len(data.train.labels)))
 print("Test Size:\t\t{}".format(len(data.test.labels)))
+
+
+# Each image size is 28px by 28px
+img_size = 28
+img_size_flat = img_size * img_size
+img_shape = (img_size, img_size)
+num_classes = 10
+
+data.test.classes = np.array([label.argmax() for label in data.test.labels])
