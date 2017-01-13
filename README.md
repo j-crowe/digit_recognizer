@@ -7,3 +7,8 @@ A simple learning experience creating:
 3. A convolutional neural network (convlutional.py)
 
 The best performing will be submitted to kaggle.
+
+
+Special Thanks to [Hvass-Labs][1] for a great into to TF NN. His guidance helped in developing these.
+
+[1]: https://github.com/Hvass-Labs/TensorFlow-Tutorials
