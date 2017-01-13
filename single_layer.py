@@ -85,3 +85,5 @@ optimization_run(100)
 optimization_run(1000)
 # We can see diminishing returns after 10000 iterations
 optimization_run(10000)
+
+session.close()
