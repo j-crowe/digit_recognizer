@@ -29,3 +29,20 @@ weights = tf.Variable(tf.zeros([img_size_flat, num_classes]))
 
 # Bias 1D Array of size num_classes
 biases = tf.Variable(tf.zeros([num_classes]))
+
+# Generate logits
+logits = tf.matmul(X, weights) + biases
+predicted = tf.nn.softmax(logits)
+predicted_cls = tf.argmax(predicted), dimension=1)
+
+# Calculate cross entropy
+cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits=logits,
+                                                        labels=y_true_one_hot)
+
+# Generate cost function by calculating mean of cross entropy
+cost_fn = tf.reduce_mean(cross_entropy)
+
+# Using gradient decent to optimize our single layer
+optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.5).minimize(cost_fn)
+correct_prediction = tf.equal(predicted_cls, y_true)
+accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
