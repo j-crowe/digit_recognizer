@@ -22,3 +22,10 @@ data.test.cls = np.array([label.argmax() for label in data.test.labels])
 X = tf.placeholder(tf.float32, [None, img_size_flat])
 y_one_hot = tf.placeholder(tf.float32, [None, num_classes])
 y_true = tf.placeholder(tf.int64, [None])
+
+# Weight matrix that is img_size_flat X num_classes
+# To be modified in TF backprop
+weights = tf.Variable(tf.zeros([img_size_flat, num_classes]))
+
+# Bias 1D Array of size num_classes
+biases = tf.Variable(tf.zeros([num_classes]))
