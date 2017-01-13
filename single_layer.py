@@ -17,4 +17,8 @@ img_size_flat = img_size * img_size
 img_shape = (img_size, img_size)
 num_classes = 10
 
-data.test.classes = np.array([label.argmax() for label in data.test.labels])
+data.test.cls = np.array([label.argmax() for label in data.test.labels])
+
+X = tf.placeholder(tf.float32, [None, img_size_flat])
+y_one_hot = tf.placeholder(tf.float32, [None, num_classes])
+y_true = tf.placeholder(tf.int64, [None])
