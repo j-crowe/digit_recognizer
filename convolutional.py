@@ -74,43 +74,56 @@ def create_conv_layer(input,
         conv = tf.nn.max_pool(conv, ksize=[1, 2, 2, 1],
                               strides=[1, 2, 2, 1], padding='SAME')
 
-    return conv, W_conv
+    return conv
 
 
-# FIRST CONV LAYER
-# W_conv1 = weight_variable([5, 5, 1, 32])
-# b_conv1 = bias_variable([32])
+def create_connected_layer(input,
+                           num_inputs,
+                           num_outputs,
+                           relu=True):
+
+    weights = weight_variable(shape=[num_inputs, num_outputs])
+    biases = bias_variable(length=num_outputs)
+
+    layer = tf.matmul(input, weights) + biases
+
+    if relu:
+        layer = tf.nn.relu(layer)
+
+    return layer
+
+
+def flatten_layer(layer):
+    # General way to figure out how many features we have
+    num_features = layer.get_shape()[1:4].num_elements()
+    # Flatten the tensor into [num_images, img_height*img_width*num_channels]
+    flattened = tf.reshape(layer, [-1, num_features])
+    return flattened, num_features
+
+
+# Transform image
 x_image = tf.reshape(x, [-1, 28, 28, 1])
 
-layer_1, weights_1 = \
-    create_conv_layer(input=x_image,
-                      num_input_channels=num_channels,
-                      filter_size=filter_size1,
-                      num_filters=num_filters1,
-                      use_pooling=True)
-# h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1)
-# h_pool1 = max_pool_2x2(h_conv1)
-# END OF FIRST CONV LAYER
+# First Convolutional layer
+layer_1 = create_conv_layer(input=x_image,
+                            num_input_channels=num_channels,
+                            filter_size=filter_size1,
+                            num_filters=num_filters1,
+                            use_pooling=True)
 
-# SECOND CONV LAYER
-W_conv2 = weight_variable([5, 5, 32, 64])
-b_conv2 = bias_variable([64])
+# Second Convolutional layer
+layer_2 = create_conv_layer(input=layer_1,
+                            num_input_channels=num_filters1,
+                            filter_size=filter_size2,
+                            num_filters=num_filters2,
+                            use_pooling=True)
 
-h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
-h_pool2 = max_pool_2x2(h_conv2)
-# END OF SECOND CONV LAYER
 
-# START OF FIRST FULLY CONNECTED LAYER
-W_fc1 = weight_variable([7 * 7 * 64, 1024])
-b_fc1 = bias_variable([1024])
-
-h_pool2_flat = tf.reshape(h_pool2, [-1, 7*7*64])
-h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
-# END OF FIRST FULLY CONNECTED LAYER
+layer_flat, num_features = flatten_layer(layer_2)
 
 # DROPOUT
-keep_prob = tf.placeholder(tf.float32)
-h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
+# keep_prob = tf.placeholder(tf.float32)
+# h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
 # END DROPOUT
 
 # START READOUT LAYER
