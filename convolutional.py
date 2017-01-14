@@ -64,7 +64,7 @@ def create_conv_layer(input,
 
     # Generate weights and biases from provided arguments
     W_conv = weight_variable(shape)
-    b_conv = bias_variable(length=num_filters)
+    b_conv = bias_variable([num_filters])
 
     # Create conv2d
     conv = conv2d(input, W_conv)
@@ -77,13 +77,13 @@ def create_conv_layer(input,
     return conv
 
 
-def create_connected_layer(input,
-                           num_inputs,
-                           num_outputs,
-                           relu=True):
+def create_fc_layer(input,
+                    num_inputs,
+                    num_outputs,
+                    relu=True):
 
     weights = weight_variable(shape=[num_inputs, num_outputs])
-    biases = bias_variable(length=num_outputs)
+    biases = bias_variable([num_outputs])
 
     layer = tf.matmul(input, weights) + biases
 
@@ -109,47 +109,45 @@ layer_1 = create_conv_layer(input=x_image,
                             num_input_channels=num_channels,
                             filter_size=filter_size1,
                             num_filters=num_filters1,
-                            use_pooling=True)
+                            pool=True)
 
 # Second Convolutional layer
 layer_2 = create_conv_layer(input=layer_1,
                             num_input_channels=num_filters1,
                             filter_size=filter_size2,
                             num_filters=num_filters2,
-                            use_pooling=True)
+                            pool=True)
 
-
+# Flatten image to original dimention
 layer_flat, num_features = flatten_layer(layer_2)
 
-# DROPOUT
-# keep_prob = tf.placeholder(tf.float32)
-# h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
-# END DROPOUT
+# Create first connected layer
+connected_layer = create_fc_layer(input=layer_flat,
+                                  num_inputs=num_features,
+                                  num_outputs=fc_size,
+                                  relu=True)
 
-# START READOUT LAYER
-W_fc2 = weight_variable([1024, 10])
-b_fc2 = bias_variable([10])
+# Create final connected layer (readout_layer)
+readout_layer = create_fc_layer(input=connected_layer,
+                                num_inputs=fc_size,
+                                num_outputs=num_classes,
+                                relu=False)
 
-y_conv = tf.matmul(h_fc1_drop, W_fc2) + b_fc2
-# END READOUT LAYER
-
-sess.run(tf.global_variables_initializer())
-
-# train
+# Train and test accuracy
 cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
-                y_conv, y_true))
+                readout_layer, y_true))
 train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
-correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(y_true, 1))
-accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+correct_pred = tf.equal(tf.argmax(readout_layer, 1), tf.argmax(y_true, 1))
+accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 sess.run(tf.global_variables_initializer())
 for i in range(20000):
     batch = mnist.train.next_batch(50)
     if i % 100 == 0:
         train_accuracy = accuracy.eval(feed_dict={x: batch[0],
-                                       y_true: batch[1], keep_prob: 1.0})
+                                       y_true: batch[1]})
         print("step %d, training accuracy %g" % (i, train_accuracy))
     train_step.run(feed_dict={x: batch[0],
-                              y_true: batch[1], keep_prob: 0.5})
+                              y_true: batch[1]})
 
 print("test accuracy %g" % accuracy.eval(feed_dict={
-    x: mnist.test.images, y_true: mnist.test.labels, keep_prob: 1.0}))
+    x: mnist.test.images, y_true: mnist.test.labels}))
