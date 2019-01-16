@@ -74,6 +74,7 @@ def optimization_run(num_iters=1):
     optimize(num_iterations=num_iters)
     acc = session.run(accuracy, feed_dict=feed_dict_test)
     print('Accuracy for {0} iteration: {1:.1%}'.format(num_iters, acc))
+    return acc
 
 
 # Attempt running a varible number of times to locate where we begin to see
@@ -84,6 +85,9 @@ optimization_run(20)
 optimization_run(100)
 optimization_run(1000)
 # We can see diminishing returns after 10000 iterations
-optimization_run(10000)
+acc = optimization_run(10000)
+
+f = open("/tmp/accuracy.txt", "a")
+f.write(acc*100)
 
 session.close()

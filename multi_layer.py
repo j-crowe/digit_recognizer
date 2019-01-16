@@ -91,6 +91,9 @@ def train_neural_network(x):
         correct = tf.equal(tf.argmax(logits, 1), tf.argmax(y, 1))
         accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
 
+        f = open("/tmp/accuracy.txt", "a")
+        f.write(accuracy.eval({x: data.test.images, y: data.test.labels})*100)
+
         print('Accuracy', accuracy.eval(
                         {x: data.test.images, y: data.test.labels}))
 
