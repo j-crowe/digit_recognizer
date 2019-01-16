@@ -88,6 +88,6 @@ optimization_run(1000)
 acc = optimization_run(10000)
 
 f = open("/tmp/accuracy.txt", "a")
-f.write(acc*100)
+f.write(str(acc*100))
 
 session.close()
