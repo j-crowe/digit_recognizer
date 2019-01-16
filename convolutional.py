@@ -1,7 +1,9 @@
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
 
-mnist = input_data.read_data_sets("/tmp/MNIST/", one_hot=True)
+print("STARTING")
+
+mnist = input_data.read_data_sets("data", one_hot=True)
 
 # Interactive session. Fix at end after testing
 sess = tf.InteractiveSession()
@@ -32,7 +34,7 @@ num_channels = 1
 
 # Number of classes, one class for each of 10 digits.
 num_classes = 10
-
+print("SETTING TRAINGIN DATA UP")
 # Training data and true labels
 x = tf.placeholder(tf.float32, shape=[None, 784])
 y_true = tf.placeholder(tf.float32, shape=[None, 10])
@@ -101,6 +103,7 @@ def flatten_layer(layer):
     return flattened, num_features
 
 
+print("SETTING UP LAYERS")
 # Transform image
 x_image = tf.reshape(x, [-1, 28, 28, 1])
 
@@ -133,6 +136,7 @@ readout_layer = create_fc_layer(input=connected_layer,
                                 num_outputs=num_classes,
                                 relu=False)
 
+print("SETTING TRAINING GAUGES")
 # Train and test accuracy
 cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(
                 logits=readout_layer, labels=y_true))
@@ -140,8 +144,10 @@ train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
 correct_pred = tf.equal(tf.argmax(readout_layer, 1), tf.argmax(y_true, 1))
 accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 sess.run(tf.global_variables_initializer())
+print("RUNNING THROUGH RANGE")
 for i in range(20000):
     batch = mnist.train.next_batch(50)
+    print("Batching training data")
     if i % 100 == 0:
         train_accuracy = accuracy.eval(feed_dict={x: batch[0],
                                        y_true: batch[1]})
