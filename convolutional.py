@@ -138,7 +138,7 @@ readout_layer = create_fc_layer(input=connected_layer,
 
 print("SETTING TRAINING GAUGES")
 # Train and test accuracy
-cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(
+cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
                 logits=readout_layer, labels=y_true))
 train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
 correct_pred = tf.equal(tf.argmax(readout_layer, 1), tf.argmax(y_true, 1))
