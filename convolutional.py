@@ -153,5 +153,4 @@ print("test accuracy %g" % accuracy.eval(feed_dict={
     x: mnist.test.images, y_true: mnist.test.labels}))
 
 f = open("/tmp/accuracy.txt", "a")
-f.write(accuracy.eval( accuracy.eval(feed_dict={
-    x: mnist.test.images, y_true: mnist.test.labels}))
+f.write(accuracy.eval( accuracy.eval(feed_dict={x: mnist.test.images, y_true: mnist.test.labels}))
