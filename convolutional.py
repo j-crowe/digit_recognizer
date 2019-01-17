@@ -1,156 +1,69 @@
-import tensorflow as tf
-from tensorflow.examples.tutorials.mnist import input_data
+from __future__ import print_function
+import keras
+import numpy as np
+from keras.datasets import mnist
+from keras.models import Sequential
+from keras.layers import Dense, Dropout, Flatten
+from keras.layers import Conv2D, MaxPooling2D
+from keras import backend as K
 
-
-mnist = input_data.read_data_sets("data", one_hot=True)
-
-# Interactive session. Fix at end after testing
-sess = tf.InteractiveSession()
-
-
-# Convolutional Layer 1.
-filter_size1 = 5          # Convolution filters are 5 x 5 pixels.
-num_filters1 = 16         # There are 16 of these filters.
-
-# Convolutional Layer 2.
-filter_size2 = 5          # Convolution filters are 5 x 5 pixels.
-num_filters2 = 36         # There are 36 of these filters.
-
-# Fully-connected layer.
-fc_size = 128             # Number of neurons in fully-connected layer.
-
-# We know that MNIST images are 28 pixels in each dimension.
-img_size = 28
-
-# Images are stored in one-dimensional arrays of this length.
-img_size_flat = img_size * img_size
-
-# Tuple with height and width of images used to reshape arrays.
-img_shape = (img_size, img_size)
-
-# Number of colour channels for the images: 1 channel for gray-scale.
-num_channels = 1
-
-# Number of classes, one class for each of 10 digits.
+batch_size = 128
 num_classes = 10
-# Training data and true labels
-x = tf.placeholder(tf.float32, shape=[None, 784])
-y_true = tf.placeholder(tf.float32, shape=[None, 10])
+epochs = 1
 
+# input image dimensions
+img_rows, img_cols = 28, 28
 
-# Helper weight generation function
-def weight_variable(shape):
-    initial = tf.truncated_normal(shape, stddev=0.1)
-    return tf.Variable(initial)
+# the data, split between train and test sets
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
 
+if K.image_data_format() == 'channels_first':
+    x_train = x_train.reshape(x_train.shape[0], 1, img_rows, img_cols)
+    x_test = x_test.reshape(x_test.shape[0], 1, img_rows, img_cols)
+    input_shape = (1, img_rows, img_cols)
+else:
+    x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, 1)
+    x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, 1)
+    input_shape = (img_rows, img_cols, 1)
 
-# Helper bias generation function
-def bias_variable(shape):
-    initial = tf.constant(0.1, shape=shape)
-    return tf.Variable(initial)
+x_train = x_train.astype('float32')
+x_test = x_test.astype('float32')
+x_train /= 255
+x_test /= 255
+print('x_train shape:', x_train.shape)
+print(x_train.shape[0], 'train samples')
+print(x_test.shape[0], 'test samples')
 
+# convert class vectors to binary class matrices
+y_train = keras.utils.to_categorical(y_train, num_classes)
+y_test = keras.utils.to_categorical(y_test, num_classes)
 
-# Helper convolutional 2d nn generation
-def conv2d(x, W):
-    return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
+model = Sequential()
+model.add(Conv2D(32, kernel_size=(3, 3),
+                 activation='relu',
+                 input_shape=input_shape))
+model.add(Conv2D(64, (3, 3), activation='relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Dropout(0.25))
+model.add(Flatten())
+model.add(Dense(128, activation='relu'))
+model.add(Dropout(0.5))
+model.add(Dense(num_classes, activation='softmax'))
 
+model.compile(loss=keras.losses.categorical_crossentropy,
+              optimizer=keras.optimizers.Adadelta(),
+              metrics=['accuracy'])
 
-def create_conv_layer(input,
-                      num_input_channels,
-                      filter_size,
-                      num_filters,
-                      pool=True):
-    shape = [filter_size, filter_size, num_input_channels, num_filters]
+model.fit(x_train, y_train,
+          batch_size=batch_size,
+          epochs=epochs,
+          verbose=1,
+          validation_data=(x_test, y_test))
+score = model.evaluate(x_test, y_test, verbose=0)
 
-    # Generate weights and biases from provided arguments
-    W_conv = weight_variable(shape)
-    b_conv = bias_variable([num_filters])
-
-    # Create conv2d
-    conv = conv2d(input, W_conv)
-    conv = tf.nn.relu(conv + b_conv)
-
-    if pool:
-        conv = tf.nn.max_pool(conv, ksize=[1, 2, 2, 1],
-                              strides=[1, 2, 2, 1], padding='SAME')
-
-    return conv
-
-
-def create_fc_layer(input,
-                    num_inputs,
-                    num_outputs,
-                    relu=True):
-
-    weights = weight_variable(shape=[num_inputs, num_outputs])
-    biases = bias_variable([num_outputs])
-
-    layer = tf.matmul(input, weights) + biases
-
-    if relu:
-        layer = tf.nn.relu(layer)
-
-    return layer
-
-
-def flatten_layer(layer):
-    # General way to figure out how many features we have
-    num_features = layer.get_shape()[1:4].num_elements()
-    # Flatten the tensor into [num_images, img_height*img_width*num_channels]
-    flattened = tf.reshape(layer, [-1, num_features])
-    return flattened, num_features
-
-
-# Transform image
-x_image = tf.reshape(x, [-1, 28, 28, 1])
-
-# First Convolutional layer
-layer_1 = create_conv_layer(input=x_image,
-                            num_input_channels=num_channels,
-                            filter_size=filter_size1,
-                            num_filters=num_filters1,
-                            pool=True)
-
-# Second Convolutional layer
-layer_2 = create_conv_layer(input=layer_1,
-                            num_input_channels=num_filters1,
-                            filter_size=filter_size2,
-                            num_filters=num_filters2,
-                            pool=True)
-
-# Flatten image to original dimention
-layer_flat, num_features = flatten_layer(layer_2)
-
-# Create first connected layer
-connected_layer = create_fc_layer(input=layer_flat,
-                                  num_inputs=num_features,
-                                  num_outputs=fc_size,
-                                  relu=True)
-
-# Create final connected layer (readout_layer)
-readout_layer = create_fc_layer(input=connected_layer,
-                                num_inputs=fc_size,
-                                num_outputs=num_classes,
-                                relu=False)
-
-# Train and test accuracy
-cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
-                logits=readout_layer, labels=y_true))
-train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
-correct_pred = tf.equal(tf.argmax(readout_layer, 1), tf.argmax(y_true, 1))
-accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
-sess.run(tf.global_variables_initializer())
-for i in range(20000):
-    batch = mnist.train.next_batch(50)
-    if i % 100 == 0:
-        train_accuracy = accuracy.eval(feed_dict={x: batch[0],
-                                       y_true: batch[1]})
-        print("step %d, training accuracy %g" % (i, train_accuracy))
-    train_step.run(feed_dict={x: batch[0],
-                              y_true: batch[1]})
-
-print("test accuracy %g" % accuracy.eval(feed_dict={
-    x: mnist.test.images, y_true: mnist.test.labels}))
-
+model.save('/tmp/mnistCNN.h5')
 f = open("/tmp/accuracy.txt", "a")
-f.write(accuracy.eval( str(accuracy.eval(feed_dict={x: mnist.test.images, y_true: mnist.test.labels}))))
+f.write(str(score[1]*100))
+
+print('Test loss:', score[0])
+print('Test accuracy:', score[1])
